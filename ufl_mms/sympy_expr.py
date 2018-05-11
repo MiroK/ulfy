@@ -2,7 +2,8 @@ from sympy.printing import ccode
 import dolfin as df
 import sympy as sp
 
-from common import is_scalar, is_number, is_vector, is_matrix, is_terminal, DEFAULT_NAMES
+from common import (is_scalar, is_number, is_vector, is_matrix, is_terminal,
+                    str_to_num, DEFAULT_NAMES)
 from ufl_sympy import ufl_to_sympy, DEFAULT_RULES
 
 
@@ -16,6 +17,12 @@ def expr_body(expr, coordnames=DEFAULT_NAMES, **kwargs):
         xyz = set(coordnames)
         xyz_used = xyz & expr.free_symbols
         assert xyz_used <= xyz
+        
+        # Recognize the constant
+        if not expr.free_symbols:
+            # Flag that we can be constant
+            return str(expr), kwargs, True
+        
         # Expression params which need default values
         params = (expr.free_symbols - xyz_used)
         # Substitute for x[0], x[1], ...
@@ -26,7 +33,7 @@ def expr_body(expr, coordnames=DEFAULT_NAMES, **kwargs):
         # Default to zero
         kwargs.update(dict((str(p), kwargs.get(str(p), 0)) for p in params))
         # Convert
-        return expr, kwargs
+        return expr, kwargs, False
     
     # Tensors that sympy can represent as lists
     # (1, n) to (n, 1) to list of n
@@ -40,11 +47,13 @@ def expr_body(expr, coordnames=DEFAULT_NAMES, **kwargs):
     # scalar place would modify it's arguments. For now I don't see how
     # https://stackoverflow.com/questions/45883655/is-it-always-safe-to-modify-the-kwargs-dictionary
     kwargs_ = kwargs
+    is_constant_expr = True
     ans = ()
     for e in expr:
-        f, kwargs_ = expr_body(e, **kwargs_)
+        f, kwargs_, is_constant = expr_body(e, **kwargs_)
+        is_constant_expr = is_constant_expr and is_constant
         ans = ans + (f, )
-    return ans, kwargs_
+    return ans, kwargs_, is_constant_expr
 
 
 def check_substitutions(subs):
@@ -66,13 +75,13 @@ def check_substitutions(subs):
 
 
 def Expression(body, **kwargs):
-    '''Construct dolfin.Expression from sympy/ufl expressions'''
+    '''Construct dolfin.Expression or Constant from sympy/ufl expressions'''
     # Generate body and ask again
     if isinstance(body, (sp.Expr, sp.Matrix)):
-        body, kwargs = expr_body(body, **kwargs)
-        return Expression(body, **kwargs)
+        body, kwargs, is_constant_expr = expr_body(body, **kwargs)
+        return df.Constant(str_to_num(body)) if is_constant_expr else Expression(body, **kwargs)
 
-    # Translare UFL and ask again
+    # Translare UFL and ask againx
     if hasattr(body, 'ufl_shape'):
         subs = kwargs.pop('subs')
         # Make sure that the UFL terminal are mapped to sensible sympy things
