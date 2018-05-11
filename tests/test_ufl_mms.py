@@ -539,11 +539,29 @@ def test_conditional():
     e_.t = 2.
     assert check(e, e_)
 
+    
+def test_collect_expr_params():
+    '''If Expression with params is substituted pick its params'''
+    mesh = UnitIntervalMesh(1000)
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx(domain=mesh)))) < 1E-10
+    
+    x, y, z, t = sp.symbols('x y z t')
+
+    f = 3*x + t
+    df = Expression(f, degree=1)
+    df.t = 2.  # Set
+
+    DEG = 10  # Degree for the final expression; high to get accuracy
+    # NOTE: e belov can be realized as Expression('df...', df=df) but
+    # this does not allow e.g. using derivatives. So we are slightly
+    # more general
+    e = df + 3*df
+    e_ = Expression(e, subs={df: f}, degree=DEG)
+    assert check(e, e_)
+
 
 def test_subs():
     '''Sanity for substitutions'''
     from ufl_mms.sympy_expr import check_substitutions
     assert check_substitutions({Constant((2, 2)): sp.Symbol('x')}) == False
     assert check_substitutions({Constant(1): sp.Symbol('x')}) == True
-
-test_subs()

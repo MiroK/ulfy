@@ -77,13 +77,33 @@ def Expression(body, **kwargs):
         subs = kwargs.pop('subs')
         # Make sure that the UFL terminal are mapped to sensible sympy things
         assert check_substitutions(subs)
-        
+        # Collect arguments for UFL conversion
         if 'rules' in kwargs:
             rules = kwargs.pop('rules')
         else:
             rules = DEFAULT_RULES
-        
         body = ufl_to_sympy(body, subs, rules)
+
+        # If the subs are expressions with parameters then it is convenient
+        # to build the result with values of their parameters set to the
+        # current value (otherwise all params are set to 0)
+        user_parameters = {}
+        for f in subs.keys():  # Possible expressions
+            params = getattr(f, 'user_parameters', {})
+            
+            if not isinstance(f, df.Expression): continue
+            
+            for p in params:
+                # In the end all the params will be put to one dict so
+                # they better agree on their values (think t as time)
+                if p in user_parameters:
+                    assert user_parameters[p] == getattr(v, p)  # V's current
+                else:
+                    user_parameters[p] = getattr(f, p)
+        # However explicit parameters take precedence
+        for p, v in user_parameters.items():
+            if p not in kwargs: kwargs[p] = v
+        # Build it
         return Expression(body, **kwargs)
     
     # We have strings, lists and call dolfin
