@@ -622,4 +622,45 @@ def test_memoize():
     assert check(e, e_)
     assert len(subs) == 3  # keys: f, df**2, e
 
-test_ufl_mms_2d()
+
+def test_diff():
+    '''Sanity check for VaraibleDerivative'''
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-8
+    
+    x, y, z, t = sp.symbols('x y z t')
+    T = 1.2
+    
+    f = 3*x*y + x**2 + 2*y**2 + t**3
+    df = Expression(f, degree=2)
+    df.t = T
+
+    g = x+y
+    dg = Expression(g, degree=1)
+
+    mesh = UnitSquareMesh(64, 64)
+    V = FunctionSpace(mesh, 'CG', 2)
+    v = interpolate(df, V)
+    u = interpolate(dg, V)
+
+    DEG = 6  # Degree for the final expression; high to get accuracy
+
+    u_, v_ = map(variable, (u, v))
+    e = diff(u_**2 + v_**2, u_)
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    u_, v_ = map(variable, (u, v))
+    e = diff(u_**2 + v_**2, u_)
+    e_ = Expression(e, subs={v_: f, u_: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    u_, v_ = map(variable, (u, v))
+    e = u**2 - v.dx(0) + diff(u_**2 + v_**2, u_)
+    e_ = Expression(e, subs={v_: f, u_: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+
+test_diff()

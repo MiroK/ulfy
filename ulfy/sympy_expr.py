@@ -5,6 +5,7 @@ import sympy as sp
 from common import (is_scalar, is_number, is_vector, is_matrix, is_terminal,
                     str_to_num, DEFAULT_NAMES)
 from ufl_sympy import ufl_to_sympy, DEFAULT_RULES
+from ufl.differentiation import Variable
 
 
 def expr_body(expr, coordnames=DEFAULT_NAMES, **kwargs):
@@ -57,9 +58,13 @@ def expr_body(expr, coordnames=DEFAULT_NAMES, **kwargs):
 
 
 def check_substitutions(subs):
-    '''Subs: UFL terminals -> sympy expressions of right type'''
-    if not all(map(is_terminal, subs.keys())):
+    '''Subs: UFL terminals/variable -> sympy expressions of right type'''
+    if not all(is_terminal(k) or isinstance(k, Variable) for k in subs.keys()):
         return False
+
+    # If the form is defined in terms of vars as well as terminals we inject
+    # unwrapped variables
+    subs.update({k.ufl_operands[0]: v for k, v in subs.items() if isinstance(k, Variable)})
 
     check_scalar = lambda k, v: k.ufl_shape == () and (is_scalar(v) or is_number(v))
 

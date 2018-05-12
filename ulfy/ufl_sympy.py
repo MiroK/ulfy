@@ -1,3 +1,4 @@
+from ufl.algorithms.apply_derivatives import apply_derivatives
 from ufl.conditional import EQ, NE, GT, LT, GE, LE
 import ufl, dolfin, sympy
 import numpy as np
@@ -193,7 +194,12 @@ DEFAULT_RULES = {
     ufl.differentiation.Curl: curl_rule,
     ufl.differentiation.NablaGrad: nabla_grad_rule,
     ufl.differentiation.NablaDiv: nabla_div_rule,
-        # Indexing
+    # Delegate job
+    # TODO here I disregard label
+    ufl.differentiation.Variable: lambda e, s, r: ufl_to_sympy(e.ufl_operands[0], s, r),
+    # Diff and try again
+    ufl.differentiation.VariableDerivative: lambda e, s, r: ufl_to_sympy(apply_derivatives(e), s, r),
+    # Indexing
     ufl.indexed.Indexed: indexed_rule,
     ufl.tensors.ComponentTensor: component_tensor_rule
 }
