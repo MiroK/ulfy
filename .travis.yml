@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 
 language: generic
 
@@ -9,7 +9,7 @@ before_install:
  - sudo apt-get update -q
  - sudo apt-get install --no-install-recommends fenics -y
  #  Pytest
- - pip install -U pytest
+ - sudo apt-get python-pytest -y
 
 install: python setup.py install --user
 
