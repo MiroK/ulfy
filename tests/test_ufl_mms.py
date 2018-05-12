@@ -662,5 +662,32 @@ def test_diff():
     e_.t = T
     assert check(e, e_)
 
+x, y, z, t = sp.symbols('x y z t')
+T = 0.123
+    
+f = sp.Matrix([[3*x, x, z],
+               [y, x, z],
+               [x, y-y, z]])
+df = Expression(f, degree=1)
+df.t = T
 
-test_diff()
+g = sp.Matrix([[x+y, 1, x],
+            [y, -x, z],
+               [x+y, y+z, z-x]])
+dg = Expression(g, degree=1)
+
+mesh = UnitCubeMesh(8, 8, 8)
+
+check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx(domain=mesh)))) < 1E-8
+
+V = TensorFunctionSpace(mesh, 'CG', 1)
+v = interpolate(df, V)
+u = interpolate(dg, V)
+
+DEG = 3
+
+R = Constant(((1, 2), (3, 4)))
+e = R*Constant((2, 3))
+e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+
+assert check(e, e_)

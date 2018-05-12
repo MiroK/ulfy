@@ -2,6 +2,7 @@ from ufl.algorithms.apply_derivatives import apply_derivatives
 from ufl.conditional import EQ, NE, GT, LT, GE, LE
 import ufl, dolfin, sympy
 import numpy as np
+import itertools
 
 from common import *
 
@@ -122,24 +123,78 @@ def curl_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 def indexed_rule(expr, subs, rules):
     '''Index node is Constant((2, 3))[0]'''
     f, indices = expr.ufl_operands
+    # If all the indices are fixed we can return an expression
     # Compute indices
-    shape = f.ufl_shape
-    indices = [slice(l) if isinstance(index, ufl.indexed.Index) else int(index)
-               for l, index in zip(shape, indices)]
-    # Get what to index
+    if all(isinstance(index, ufl.indexed.FixedIndex) for index in indices):
+        indices = map(int, indices)
+        indices = indices.pop() if len(indices) else tuple(indices)
+        # Get what to index
+        f = ufl_to_sympy(f, subs, rules)
+        return f[indices]
+
+    # No I want to slice the sympy object to get something to be indexed
+    # only by free indices
+    shape = f.ufl_shape  # FIXME: use ufl_index_dim
+    is_free = lambda i: isinstance(i, ufl.indexed.Index)
+    # Slice is free
+    index = tuple(slice(l) if is_free(index) else int(index) for l, index in zip(shape, indices))
+    # Adjust indices by removing fixed
+    f_index = filter(is_free, indices.indices())
+    # Get what to index and the slice
     f = ufl_to_sympy(f, subs, rules)
-    # Slice
-    if len(indices) == 1:
-        index = indices.pop()
-        return f[index] if isinstance(index, int) else sympy.Matrix(f[index])
-    return sympy.Matrix(f[indices])
+    f = f[index] if isinstance(indices, int) else sympy.Matrix(f[index])
+    # F is now the object that will be accessed typically by component tensor
+    # NOTE: index comes with a tag ang we use f_index to place it
+    print 'expect', f_index
+    return lambda index, index_tags, f=f, f_index=f_index: (
+        lambda i: f[i[0]] if len(i) == 1 else f[i]
+    )(order_index(index, index_tags, f_index))
 
 
 def component_tensor_rule(expr, subs, rules):
     '''ComponentTensor is Identity(3)[:, 2]'''
-    # FIXME: Is this always the way to go?
-    indexed, _ = expr.ufl_operands
-    return ufl_to_sympy(indexed, subs, rules)
+    indexed, indices = expr.ufl_operands
+
+    print 'ct uses', list(iterindices(indices, expr.ufl_shape))
+    # This is a function of indices
+    f = ufl_to_sympy(indexed, subs, rules)
+    # Build the result values by consuming the 
+    values = [f(i, tags) for (i, tags) in iterindices(indices, expr.ufl_shape)]
+    values = np.array(values).reshape(expr.ufl_shape)
+    
+    return sympy.Matrix(values)
+
+
+def index_sum_rule(expr, subs, rules):
+    '''Index sum compiles into a function'''
+    body, summation_indices = expr.ufl_operands
+    assert isinstance(body, ufl.algebra.Product)
+    # Eval arguments of product
+    a, b = body.ufl_operands
+
+    print 's', summation_indices.indices()
+    print 'a', a.ufl_free_indices
+    print 'b', b.ufl_free_indices
+    # Compute how to evaluate a
+    fb = ufl_to_sympy(b, subs, rules)
+    # And b
+    fb = ufl_to_sympy(b, subs, rules)
+
+
+def iterindices(indices, shape):
+    '''Loop corresponding to free indices'''
+    assert len(indices) == len(shape)
+    tags = indices.indices()
+    for i in itertools.product(*map(range, shape)):
+        yield i, tags
+
+        
+def order_index(index, comming, expected):
+    assert set(comming) == set(expected), (comming, expected)
+    ordered_index = [0]*len(index)
+    for i, c in zip(index, comming):
+        ordered_index[expected.index(c)] = i
+    return tuple(ordered_index)
 
 # Some of the tensor algebra rules will be computed using numpy.
 
@@ -201,7 +256,8 @@ DEFAULT_RULES = {
     ufl.differentiation.VariableDerivative: lambda e, s, r: ufl_to_sympy(apply_derivatives(e), s, r),
     # Indexing
     ufl.indexed.Indexed: indexed_rule,
-    ufl.tensors.ComponentTensor: component_tensor_rule
+    ufl.tensors.ComponentTensor: component_tensor_rule,
+    ufl.indexsum.IndexSum: index_sum_rule,
 }
 # And now the rest
 DEFAULT_RULES.update(

@@ -61,7 +61,6 @@ def check_substitutions(subs):
     '''Subs: UFL terminals/variable -> sympy expressions of right type'''
     if not all(is_terminal(k) or isinstance(k, Variable) for k in subs.keys()):
         return False
-
     # If the form is defined in terms of vars as well as terminals we inject
     # unwrapped variables
     subs.update({k.ufl_operands[0]: v for k, v in subs.items() if isinstance(k, Variable)})
