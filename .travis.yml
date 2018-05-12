@@ -9,7 +9,7 @@ before_install:
  - sudo apt-get update -q
  - sudo apt-get install --no-install-recommends fenics -y
  #  Pytest
- - sudo apt-get python-pytest -y
+ - sudo apt-get install python-pytest -y
 
 install: python setup.py install --user
 
