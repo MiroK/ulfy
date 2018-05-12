@@ -1,5 +1,5 @@
 from dolfin import *
-from ufl_mms import Expression
+from ulfy import Expression
 import sympy as sp
 import ufl
 
@@ -562,6 +562,31 @@ def test_collect_expr_params():
 
 def test_subs():
     '''Sanity for substitutions'''
-    from ufl_mms.sympy_expr import check_substitutions
+    from ulfy.sympy_expr import check_substitutions
     assert check_substitutions({Constant((2, 2)): sp.Symbol('x')}) == False
     assert check_substitutions({Constant(1): sp.Symbol('x')}) == True
+
+
+def test_memoize():
+    '''Sanity for momoization of translated expressions'''
+    mesh = UnitIntervalMesh(1000)
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx(domain=mesh)))) < 1E-10
+    
+    x, y, z, t = sp.symbols('x y z t')
+
+    f = 3*x + t
+    df = Expression(f, degree=1)
+    df.t = 2.  # Set
+
+    DEG = 10  # Degree for the final expression; high to get accuracy
+    # NOTE: e belov can be realized as Expression('df...', df=df) but
+    # this does not allow e.g. using derivatives. So we are slightly
+    # more general
+    subs = {df: f}
+
+    e = df**2
+    for e in range(10): e += df**2
+    
+    e_ = Expression(e, subs=subs, degree=DEG)
+    assert check(e, e_)
+    assert len(subs) == 3  # keys: f, df**2, e

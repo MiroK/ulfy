@@ -236,5 +236,10 @@ def ufl_to_sympy(expr, subs, rules=DEFAULT_RULES):
     # Uncaught numbers; identity
     if is_number(expr):
         return expr
-    # Compounds
-    return rules[type(expr)](expr, subs, rules)
+    # Translate if it wasn't done
+    if expr not in subs:
+        subs[expr] = rules[type(expr)](expr, subs, rules)
+    else:
+        print 'Loopup'
+    # Lookup
+    return subs[expr]

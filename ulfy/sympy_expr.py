@@ -84,7 +84,8 @@ def Expression(body, **kwargs):
     # Translare UFL and ask againx
     if hasattr(body, 'ufl_shape'):
         subs = kwargs.pop('subs')
-        # Make sure that the UFL terminal are mapped to sensible sympy things
+        # Make sure that we start with dictionary of terminals mapped to
+        # sensible values. Note that the subs dict will grow during translation
         assert check_substitutions(subs)
         # Collect arguments for UFL conversion
         if 'rules' in kwargs:
