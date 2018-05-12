@@ -106,6 +106,27 @@ def test_ufl_mms_2d():
     e_.t = T
     assert check(e, e_)
 
+    e = grad(u) + nabla_grad(v)
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    e = div(grad(u)) + nabla_div(nabla_grad(v))
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    uv = as_vector((u, v))
+    e = grad(nabla_grad(u+v)) + outer(uv, uv)
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    e = inner(nabla_grad(u), nabla_grad(v))
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
     uv = as_vector((u, v))
     e = det(grad(grad(u+v)))# + tr(outer(uv, 2*uv))
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -275,6 +296,11 @@ def test_ufl_mms_2d_mat():
     e_.t = T
     assert check(e, e_)
 
+    e = nabla_div(u+v)
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
     
 def test_ufl_mms_3d():
     '''
@@ -363,6 +389,11 @@ def test_ufl_mms_3d():
     assert check(e, e_)
 
     e = curl(grad(u*u)) + 2*curl(grad(v*u))
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    e = curl(nabla_grad(u*u)) + 2*curl(nabla_grad(v*u))
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
     e_.t = T
     assert check(e, e_)
@@ -590,3 +621,5 @@ def test_memoize():
     e_ = Expression(e, subs=subs, degree=DEG)
     assert check(e, e_)
     assert len(subs) == 3  # keys: f, df**2, e
+
+test_ufl_mms_2d()

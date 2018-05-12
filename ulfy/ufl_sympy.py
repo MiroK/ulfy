@@ -53,6 +53,20 @@ def grad_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
     return sympy.Matrix(map(scalar_grad, f))
 
 
+def nabla_grad_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
+    '''Translate nabla gradient expression'''
+    f, = expr.ufl_operands
+    gdim = expr.ufl_shape[-1]
+    # Reduce to sympy
+    f = ufl_to_sympy(f, subs, rules)
+    # Consider gdim coords when differentiating
+    scalar_grad = lambda f, x=coordnames[:gdim]: [f.diff(xi) for xi in x]
+
+    if is_scalar(f):
+        return sympy.Matrix(scalar_grad(f))
+    return sympy.Matrix(map(scalar_grad, f)).T
+
+
 def div_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
     '''Translate div expression'''
     f, = expr.ufl_operands
@@ -65,6 +79,20 @@ def div_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
         return vector_div(f)
     # Row wise d s_{ij}/d x_j
     return sympy.Matrix(map(vector_div, [f[i, :] for i in range(f.rows)]))
+
+
+def nabla_div_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
+    '''Translate nabla div expression'''
+    f, = expr.ufl_operands
+    # Reduce to sympy
+    f = ufl_to_sympy(f, subs, rules)
+    
+    vector_div = lambda f, x=coordnames: sum(fi.diff(xi) for fi, xi in zip(f, x))
+
+    if is_vector(f):
+        return vector_div(f)
+    # Row wise d s_{ij}/d x_i
+    return sympy.Matrix(map(vector_div, [f[:, i] for i in range(f.rows)]))
 
 
 def curl_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
@@ -163,6 +191,8 @@ DEFAULT_RULES = {
     ufl.differentiation.Grad: grad_rule,
     ufl.differentiation.Div: div_rule,
     ufl.differentiation.Curl: curl_rule,
+    ufl.differentiation.NablaGrad: nabla_grad_rule,
+    ufl.differentiation.NablaDiv: nabla_div_rule,
         # Indexing
     ufl.indexed.Indexed: indexed_rule,
     ufl.tensors.ComponentTensor: component_tensor_rule
@@ -239,7 +269,5 @@ def ufl_to_sympy(expr, subs, rules=DEFAULT_RULES):
     # Translate if it wasn't done
     if expr not in subs:
         subs[expr] = rules[type(expr)](expr, subs, rules)
-    else:
-        print 'Loopup'
     # Lookup
     return subs[expr]
