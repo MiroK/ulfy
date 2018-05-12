@@ -10,9 +10,10 @@ before_install:
  - sudo apt-get install --no-install-recommends fenics -y
  #  Pytest
  - sudo apt-get install python-pytest -y
-
+ - sudo apt-get install python-logilab-common -y
+ 
 install: python setup.py install --user
 
-script: pytest
+script: py.test
 
 
