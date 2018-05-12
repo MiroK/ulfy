@@ -213,10 +213,10 @@ def test_ufl_mms_2d_vec():
     assert check(e, e_)
 
     R = Constant(((1, 2), (3, 4)))
-    # e = R*u
-    # e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
-    # e_.t = T
-    # print check(e, e_)
+    e = R*u
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    print check(e, e_)
 
     e = dot(R, u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -275,11 +275,11 @@ def test_ufl_mms_2d_mat():
     e_.t = T
     assert check(e, e_)
 
-    # R = Constant(((1, 2), (3, 4)))
-    # e = R*u
-    # e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
-    # e_.t = T
-    # print check(e, e_)
+    R = Constant(((1, 2), (3, 4)))
+    e = R*u
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    print check(e, e_)
 
     e = det(u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -448,10 +448,10 @@ def test_ufl_mms_3d_vec():
     assert check(e, e_)
 
     R = Constant(((1, 2, 0), (0, 3, 4), (0, 0, 1)))
-    # e = R*u
-    # e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
-    # e_.t = T
-    # print check(e, e_)
+    e = R*u
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    print check(e, e_)
 
     e = dot(R, u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -485,7 +485,8 @@ def test_ufl_mms_3d_mat():
     where V is a suitable polynomial space. If e=e(v) is a UFL expression 
     then Expression(e, {v: f}) should be very close.
     '''
-    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-8
+    mesh = UnitCubeMesh(8, 8, 8)
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx(domain=mesh)))) < 1E-8
     
     x, y, z, t = sp.symbols('x y z t')
     T = 0.123
@@ -501,12 +502,27 @@ def test_ufl_mms_3d_mat():
                    [x+y, y+z, z-x]])
     dg = Expression(g, degree=1)
 
-    mesh = UnitCubeMesh(8, 8, 8)
     V = TensorFunctionSpace(mesh, 'CG', 1)
     v = interpolate(df, V)
     u = interpolate(dg, V)
 
     DEG = 3
+
+    X = Constant(((1, 2), (3, 4)))
+    e = X*X
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    e = X*Constant((1, 2))
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
+
+    e = X*X[:, 1]
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    assert check(e, e_)
 
     e = u + v
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -518,11 +534,10 @@ def test_ufl_mms_3d_mat():
     e_.t = T
     assert check(e, e_)
 
-    # R = Constant(((1, 2), (3, 4)))
-    # e = R*u
-    # e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
-    # e_.t = T
-    # print check(e, e_)
+    e = v*u*u
+    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
+    e_.t = T
+    print check(e, e_)
 
     e = det(u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -662,32 +677,3 @@ def test_diff():
     e_.t = T
     assert check(e, e_)
 
-x, y, z, t = sp.symbols('x y z t')
-T = 0.123
-    
-f = sp.Matrix([[3*x, x, z],
-               [y, x, z],
-               [x, y-y, z]])
-df = Expression(f, degree=1)
-df.t = T
-
-g = sp.Matrix([[x+y, 1, x],
-            [y, -x, z],
-               [x+y, y+z, z-x]])
-dg = Expression(g, degree=1)
-
-mesh = UnitCubeMesh(8, 8, 8)
-
-check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx(domain=mesh)))) < 1E-8
-
-V = TensorFunctionSpace(mesh, 'CG', 1)
-v = interpolate(df, V)
-u = interpolate(dg, V)
-
-DEG = 3
-
-R = Constant(((1, 2), (3, 4)))
-e = R*Constant((2, 3))
-e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
-
-assert check(e, e_)

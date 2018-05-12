@@ -123,46 +123,28 @@ def curl_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 def indexed_rule(expr, subs, rules):
     '''Index node is Constant((2, 3))[0]'''
     f, indices = expr.ufl_operands
-    # If all the indices are fixed we can return an expression
+    # This rule is correct when all indices are fixed otherwise we return
+    # something that e.g. IndexSum can use
+    f, indices = expr.ufl_operands
     # Compute indices
-    if all(isinstance(index, ufl.indexed.FixedIndex) for index in indices):
-        indices = map(int, indices)
-        indices = indices.pop() if len(indices) else tuple(indices)
-        # Get what to index
-        f = ufl_to_sympy(f, subs, rules)
-        return f[indices]
-
-    # No I want to slice the sympy object to get something to be indexed
-    # only by free indices
-    shape = f.ufl_shape  # FIXME: use ufl_index_dim
-    is_free = lambda i: isinstance(i, ufl.indexed.Index)
-    # Slice is free
-    index = tuple(slice(l) if is_free(index) else int(index) for l, index in zip(shape, indices))
-    # Adjust indices by removing fixed
-    f_index = filter(is_free, indices.indices())
-    # Get what to index and the slice
+    shape = f.ufl_shape
+    indices = tuple(slice(l) if isinstance(index, ufl.indexed.Index) else int(index)
+                    for l, index in zip(shape, indices))
+    # Get what to index
     f = ufl_to_sympy(f, subs, rules)
-    f = f[index] if isinstance(indices, int) else sympy.Matrix(f[index])
-    # F is now the object that will be accessed typically by component tensor
-    # NOTE: index comes with a tag ang we use f_index to place it
-    print 'expect', f_index
-    return lambda index, index_tags, f=f, f_index=f_index: (
-        lambda i: f[i[0]] if len(i) == 1 else f[i]
-    )(order_index(index, index_tags, f_index))
+    # Slice
+    if len(indices) == 1:
+        index = indices[0]
+        return f[index] if isinstance(index, int) else sympy.Matrix(f[index])
+    return sympy.Matrix(f[indices])
 
 
 def component_tensor_rule(expr, subs, rules):
     '''ComponentTensor is Identity(3)[:, 2]'''
     indexed, indices = expr.ufl_operands
-
-    print 'ct uses', list(iterindices(indices, expr.ufl_shape))
-    # This is a function of indices
-    f = ufl_to_sympy(indexed, subs, rules)
-    # Build the result values by consuming the 
-    values = [f(i, tags) for (i, tags) in iterindices(indices, expr.ufl_shape)]
-    values = np.array(values).reshape(expr.ufl_shape)
-    
-    return sympy.Matrix(values)
+    # FIXME: This is not general enough
+    indexed, _ = expr.ufl_operands
+    return ufl_to_sympy(indexed, subs, rules)
 
 
 def index_sum_rule(expr, subs, rules):
@@ -171,30 +153,14 @@ def index_sum_rule(expr, subs, rules):
     assert isinstance(body, ufl.algebra.Product)
     # Eval arguments of product
     a, b = body.ufl_operands
+    # These are both indexed. I assume that these are A*B aor A*v and
+    # then in either case dot is the way to go
+    a = ufl_to_sympy(a, subs, rules)
+    b = ufl_to_sympy(b, subs, rules)
+    # This is really ugly
+    if is_vector(a): return b*a
 
-    print 's', summation_indices.indices()
-    print 'a', a.ufl_free_indices
-    print 'b', b.ufl_free_indices
-    # Compute how to evaluate a
-    fb = ufl_to_sympy(b, subs, rules)
-    # And b
-    fb = ufl_to_sympy(b, subs, rules)
-
-
-def iterindices(indices, shape):
-    '''Loop corresponding to free indices'''
-    assert len(indices) == len(shape)
-    tags = indices.indices()
-    for i in itertools.product(*map(range, shape)):
-        yield i, tags
-
-        
-def order_index(index, comming, expected):
-    assert set(comming) == set(expected), (comming, expected)
-    ordered_index = [0]*len(index)
-    for i, c in zip(index, comming):
-        ordered_index[expected.index(c)] = i
-    return tuple(ordered_index)
+    return a*b
 
 # Some of the tensor algebra rules will be computed using numpy.
 
