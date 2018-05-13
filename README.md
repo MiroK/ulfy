@@ -30,4 +30,5 @@ Expressions that represent UFL expressions (without substituting SymPy expressio
 [ufl-interpreter](https://github.com/MiroK/ufl-interpreter). This allows you to evaluate the UFL expressions which 
 DOLFIN uses (e.g. to assemble forms) in arbitrary point in the finite element mesh.
 
-[![Build Status](https://travis-ci.org/MiroK/ulfy.svg?branch=master)](https://travis-ci.org/MiroK/ulfy)
+## FEniCS compatibility
+This package is CI tested against FEniCS packages for `ubuntu 16.04 LTS` [![Build Status](https://travis-ci.org/MiroK/ulfy.svg?branch=master)](https://travis-ci.org/MiroK/ulfy)

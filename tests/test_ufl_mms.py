@@ -679,5 +679,3 @@ def test_diff():
     e_ = Expression(e, subs={v_: f, u_: g}, degree=DEG)
     e_.t = T
     assert check(e, e_)
-
-    Expression('1)', degree=1)
