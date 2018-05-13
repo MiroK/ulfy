@@ -18,6 +18,9 @@ def test_ufl_mms_1d():
     df = Expression(f, degree=1)
     df.t = 2.
 
+    # Old expression still works
+    Expression('x[0]+1', degree=1)
+
     mesh = UnitIntervalMesh(1000)
     V = FunctionSpace(mesh, 'CG', 1)
     v = interpolate(df, V)
@@ -677,3 +680,4 @@ def test_diff():
     e_.t = T
     assert check(e, e_)
 
+    Expression('1)', degree=1)
