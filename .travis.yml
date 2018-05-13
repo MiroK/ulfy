@@ -14,10 +14,4 @@ before_install:
  
 install: python setup.py install --user
 
-script:
-  - |
-    export INSTANT_CACHE_DIR="${HOME}/instant"        
-    py.test
-
-after_failure:
-    - find$ {HOME}/.cache/instant/error/* -name 'compile.log' -print -exec cat '{}' \;
+script: py.test
