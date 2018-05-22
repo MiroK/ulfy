@@ -61,6 +61,7 @@ def check_substitutions(subs):
     '''Subs: UFL terminals/variable -> sympy expressions of right type'''
     if not all(is_terminal(k) or isinstance(k, Variable) for k in subs.keys()):
         return False
+
     # If the form is defined in terms of vars as well as terminals we inject
     # unwrapped variables
     subs.update({k.ufl_operands[0]: v for k, v in subs.items() if isinstance(k, Variable)})
@@ -87,7 +88,7 @@ def Expression(body, **kwargs):
 
     # Translare UFL and ask againx
     if hasattr(body, 'ufl_shape'):
-        subs = kwargs.pop('subs')
+        subs = kwargs.pop('subs').copy()
         # Make sure that we start with dictionary of terminals mapped to
         # sensible values. Note that the subs dict will grow during translation
         assert check_substitutions(subs)

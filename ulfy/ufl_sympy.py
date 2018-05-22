@@ -1,12 +1,24 @@
 from ufl.algorithms.apply_derivatives import apply_derivatives
 from ufl.conditional import EQ, NE, GT, LT, GE, LE
-import ufl, dolfin, sympy
+import ufl, dolfin, sympy, operator
+from random import sample
 import numpy as np
-import itertools
+
 
 from common import *
 
 
+# def random_symbol(used, size=4):
+#     '''Name of size avoiding used'''
+#     alphabet = map(chr, range(65, 91))
+#     alphabet.extend(map(lambda s: s.lower(), alphabet))
+    
+#     while True:
+#         symbol = sympy.Symbol(''.join(sample(alphabet, size)))
+#         if symbol not in used:
+#             return symbol
+
+        
 def make_rule(rule):
     '''
     Returns a function which uses `rule` to create sympy expression from 
@@ -28,7 +40,18 @@ def terminal_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 
     if isinstance(expr, dolfin.Constant):
         if expr.ufl_shape == ():
+            # # Make constant scalars into symbols which will take the
+            # # value from the dictionary. This way Expression('A', A=2)
+            # # is made so we don't recompile
+            # used = reduce(operator.and_,
+            #               (v.free_symbols if hasattr(v, 'free_symbols') else set() for v in subs.values()))
+            # symbol = random_symbol(used, size=3)
+            # # Make nute of the substitution
+            # subs[symbol] = expr(0)
+
+            # return symbol
             return expr(0)
+        
         return sympy.Matrix(expr.values().reshape(expr.ufl_shape))
 
     if isinstance(expr, ufl.constantvalue.Identity):
@@ -291,9 +314,9 @@ def ufl_to_sympy(expr, subs, rules=DEFAULT_RULES):
     # UFL terminals
     if is_terminal(expr):
         return terminal_rule(expr, subs, rules)
-    # Uncaught numbers; identity
+    # Uncaught numbers; identity - t
     if is_number(expr):
-        return expr
+        return ufl_to_sympy(Constant(expr), subs, rules)
     # Translate if it wasn't done
     if expr not in subs:
         subs[expr] = rules[type(expr)](expr, subs, rules)

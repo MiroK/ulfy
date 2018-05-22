@@ -638,7 +638,7 @@ def test_memoize():
     
     e_ = Expression(e, subs=subs, degree=DEG)
     assert check(e, e_)
-    assert len(subs) == 3  # keys: f, df**2, e
+    assert len(subs) == 1  # keys: f, df**2, e but we do subs on copy
 
 
 def test_diff():
