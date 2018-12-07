@@ -15,7 +15,8 @@ def is_terminal(f):
 
 def is_matrix(f):
     '''Matrices including (1, 1)'''
-    return isinstance(f, Matrix) and (f.shape == (1, 1) or 1 not in f.shape)
+    # return isinstance(f, Matrix) and (f.shape == (1, 1) or 1 not in f.shape)
+    return isinstance(f, Matrix) and 1 not in f.shape
 
 
 def is_vector(f):
