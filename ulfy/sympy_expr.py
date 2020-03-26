@@ -2,9 +2,9 @@ from sympy.printing import ccode
 import dolfin as df
 import sympy as sp
 
-from common import (is_scalar, is_number, is_vector, is_matrix, is_terminal,
+from .common import (is_scalar, is_number, is_vector, is_matrix, is_terminal,
                     str_to_num, DEFAULT_NAMES)
-from ufl_sympy import ufl_to_sympy, DEFAULT_RULES
+from .ufl_sympy import ufl_to_sympy, DEFAULT_RULES
 from ufl.differentiation import Variable
 
 
@@ -31,6 +31,8 @@ def expr_body(expr, coordnames=DEFAULT_NAMES, **kwargs):
                          simultaneous=True)
         # Body
         expr = ccode(expr).replace('M_PI', 'pi')
+        # log needs to be replaced by std::log to avoid confusion with the log() function in Dolfin
+        expr = expr.replace("log", "std::log")
         # Default to zero
         kwargs.update(dict((str(p), kwargs.get(str(p), 0)) for p in params))
         # Convert

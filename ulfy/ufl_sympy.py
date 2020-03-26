@@ -4,8 +4,7 @@ import ufl, dolfin, sympy, operator
 from random import sample
 import numpy as np
 
-
-from common import *
+from .common import *
 
 
 # def random_symbol(used, size=4):
@@ -287,10 +286,10 @@ DEFAULT_RULES.update(
              (ufl.mathfunctions.Atan2, sympy.atan2),
              (ufl.mathfunctions.Erf, sympy.erf),
              # Math functions of two arguments
-             (ufl.mathfunctions.BesselI, sympy.special.bessel.besseli),
-             (ufl.mathfunctions.BesselY, sympy.special.bessel.bessely),
-             (ufl.mathfunctions.BesselJ, sympy.special.bessel.besselj),
-             (ufl.mathfunctions.BesselK, sympy.special.bessel.besselk),
+             (ufl.mathfunctions.BesselI, sympy.functions.special.bessel.besseli),
+             (ufl.mathfunctions.BesselY, sympy.functions.special.bessel.bessely),
+             (ufl.mathfunctions.BesselJ, sympy.functions.special.bessel.besselj),
+             (ufl.mathfunctions.BesselK, sympy.functions.special.bessel.besselk),
              # Boolean
              (EQ, sympy.Eq), (NE, sympy.Ne), (GT, sympy.Gt), (LT, sympy.Lt), (GE, sympy.Ge), (LE, sympy.Le),
              # Conditionals
