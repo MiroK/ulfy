@@ -61,12 +61,12 @@ def expr_body(expr, coordnames=DEFAULT_NAMES, **kwargs):
 
 def check_substitutions(subs):
     '''Subs: UFL terminals/variable -> sympy expressions of right type'''
-    if not all(is_terminal(k) or isinstance(k, Variable) for k in subs.keys()):
+    if not all(is_terminal(k) or isinstance(k, Variable) for k in list(subs.keys())):
         return False
 
     # If the form is defined in terms of vars as well as terminals we inject
     # unwrapped variables
-    subs.update({k.ufl_operands[0]: v for k, v in subs.items() if isinstance(k, Variable)})
+    subs.update({k.ufl_operands[0]: v for k, v in list(subs.items()) if isinstance(k, Variable)})
 
     check_scalar = lambda k, v: k.ufl_shape == () and (is_scalar(v) or is_number(v))
 
@@ -78,7 +78,7 @@ def check_substitutions(subs):
 
     check = lambda p: check_scalar(*p) or check_vector(*p) or check_matrix(*p)
 
-    return all(map(check, subs.items()))
+    return all(map(check, list(subs.items())))
 
 
 def Expression(body, **kwargs):
@@ -105,9 +105,12 @@ def Expression(body, **kwargs):
         # to build the result with values of their parameters set to the
         # current value (otherwise all params are set to 0)
         user_parameters = {}
-        for f in subs.keys():  # Possible expressions
-            params = getattr(f, 'user_parameters', {})
-            
+        for f in list(subs.keys()):  # Possible expressions
+            if not hasattr(f, 'user_parameters'):
+                params = {}
+            else:
+                params = f.user_parameters.__dict__['_params']
+
             if not isinstance(f, df.Expression): continue
             
             for p in params:
@@ -118,7 +121,7 @@ def Expression(body, **kwargs):
                 else:
                     user_parameters[p] = getattr(f, p)
         # However explicit parameters take precedence
-        for p, v in user_parameters.items():
+        for p, v in list(user_parameters.items()):
             if p not in kwargs: kwargs[p] = v
         # Build it
         return Expression(body, **kwargs)

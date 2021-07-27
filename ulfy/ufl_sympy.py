@@ -51,7 +51,7 @@ def terminal_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
             # return symbol
             return expr(0)
         
-        return sympy.Matrix(expr.values().reshape(expr.ufl_shape))
+        return sympy.Matrix(np.array(expr.values()).reshape(expr.ufl_shape))
 
     if isinstance(expr, ufl.constantvalue.Identity):
         return sympy.eye(expr.ufl_shape[0])
@@ -74,7 +74,7 @@ def grad_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 
     if is_scalar(f):
         return sympy.Matrix(scalar_grad(f))
-    return sympy.Matrix(map(scalar_grad, f))
+    return sympy.Matrix(list(map(scalar_grad, f)))
 
 
 def nabla_grad_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
@@ -88,7 +88,7 @@ def nabla_grad_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 
     if is_scalar(f):
         return sympy.Matrix(scalar_grad(f))
-    return sympy.Matrix(map(scalar_grad, f)).T
+    return sympy.Matrix(list(map(scalar_grad, f))).T
 
 
 def div_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
@@ -102,7 +102,7 @@ def div_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
     if is_vector(f):
         return vector_div(f)
     # Row wise d s_{ij}/d x_j
-    return sympy.Matrix(map(vector_div, [f[i, :] for i in range(f.rows)]))
+    return sympy.Matrix(list(map(vector_div, [f[i, :] for i in range(f.rows)])))
 
 
 def nabla_div_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
@@ -116,7 +116,7 @@ def nabla_div_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
     if is_vector(f):
         return vector_div(f)
     # Row wise d s_{ij}/d x_i
-    return sympy.Matrix(map(vector_div, [f[:, i] for i in range(f.rows)]))
+    return sympy.Matrix(list(map(vector_div, [f[:, i] for i in range(f.rows)])))
 
 
 def curl_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
@@ -197,7 +197,7 @@ def to_numpy(a):
 
 def with_numpy(op, *args):
     '''Apply op to args converted to array'''
-    args = map(to_numpy, args)
+    args = list(map(to_numpy, args))
     ans = op(*args)
 
     if not is_scalar(ans):
@@ -257,6 +257,7 @@ DEFAULT_RULES.update(
              (ufl.algebra.Division, lambda a, b: a/b),  
              (ufl.algebra.Product, lambda a, b: a*b),
              (ufl.algebra.Power, lambda a, b: a**b),
+             (ufl.algebra.Conj, lambda a: a),
              # Tensor algebra
              (ufl.tensoralgebra.Determinant, lambda a: a.det()),
              (ufl.tensoralgebra.Inverse, lambda a: a.inv()),

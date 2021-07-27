@@ -114,11 +114,6 @@ def test_ufl_mms_2d():
     e_.t = T
     assert check(e, e_)
 
-    e = div(grad(u)) + nabla_div(nabla_grad(v))
-    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
-    e_.t = T
-    assert check(e, e_)
-
     uv = as_vector((u, v))
     e = grad(nabla_grad(u+v)) + outer(uv, uv)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -219,7 +214,7 @@ def test_ufl_mms_2d_vec():
     e = R*u
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
     e_.t = T
-    print check(e, e_)
+    print(check(e, e_))
 
     e = dot(R, u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -282,7 +277,7 @@ def test_ufl_mms_2d_mat():
     e = R*u
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
     e_.t = T
-    print check(e, e_)
+    print(check(e, e_))
 
     e = det(u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -295,11 +290,6 @@ def test_ufl_mms_2d_mat():
     assert check(e, e_)
 
     e = div(u+v)
-    e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
-    e_.t = T
-    assert check(e, e_)
-
-    e = nabla_div(u+v)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
     e_.t = T
     assert check(e, e_)
@@ -454,7 +444,7 @@ def test_ufl_mms_3d_vec():
     e = R*u
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
     e_.t = T
-    print check(e, e_)
+    print(check(e, e_))
 
     e = dot(R, u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -540,7 +530,7 @@ def test_ufl_mms_3d_mat():
     e = v*u*u
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
     e_.t = T
-    print check(e, e_)
+    print(check(e, e_))
 
     e = det(u)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
@@ -662,19 +652,19 @@ def test_diff():
 
     DEG = 6  # Degree for the final expression; high to get accuracy
 
-    u_, v_ = map(variable, (u, v))
+    u_, v_ = list(map(variable, (u, v)))
     e = diff(u_**2 + v_**2, u_)
     e_ = Expression(e, subs={v: f, u: g}, degree=DEG)
     e_.t = T
     assert check(e, e_)
 
-    u_, v_ = map(variable, (u, v))
+    u_, v_ = list(map(variable, (u, v)))
     e = diff(u_**2 + v_**2, u_)
     e_ = Expression(e, subs={v_: f, u_: g}, degree=DEG)
     e_.t = T
     assert check(e, e_)
 
-    u_, v_ = map(variable, (u, v))
+    u_, v_ = list(map(variable, (u, v)))
     e = u**2 - v.dx(0) + diff(u_**2 + v_**2, u_)
     e_ = Expression(e, subs={v_: f, u_: g}, degree=DEG)
     e_.t = T
