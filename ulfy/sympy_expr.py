@@ -88,9 +88,12 @@ def Expression(body, **kwargs):
         body, kwargs, is_constant_expr = expr_body(body, **kwargs)
         return df.Constant(str_to_num(body)) if is_constant_expr else Expression(body, **kwargs)
 
-    # Translare UFL and ask againx
+    # Translate UFL and ask againx
     if hasattr(body, 'ufl_shape'):
-        subs = kwargs.pop('subs').copy()
+        if 'subs' in kwargs:
+            subs = kwargs.pop('subs').copy()
+        else:
+            subs = {}
         # Make sure that we start with dictionary of terminals mapped to
         # sensible values. Note that the subs dict will grow during translation
         assert check_substitutions(subs)

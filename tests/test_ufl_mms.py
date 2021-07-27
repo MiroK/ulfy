@@ -669,3 +669,60 @@ def test_diff():
     e_ = Expression(e, subs={v_: f, u_: g}, degree=DEG)
     e_.t = T
     assert check(e, e_)
+
+    
+def test_nosympy_expr():
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-10
+    
+    mesh = UnitSquareMesh(3, 3)
+
+    x, y = SpatialCoordinate(mesh)
+    f = x + 2*y
+    fe = Expression(f, degree=1)
+
+    assert check(f, fe)
+
+
+def test_dnosympy_expr():
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-10
+    
+    mesh = UnitSquareMesh(3, 3)
+
+    x, y = SpatialCoordinate(mesh)
+    f = grad(x*y)
+    fe = Expression(f, degree=1)
+
+    assert check(f, fe)
+
+    
+def test_nosympy_const_expr():
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-10
+    
+    mesh = UnitSquareMesh(3, 3)
+
+    a = Constant(3)
+    x, y = SpatialCoordinate(mesh)
+    f = a*(x + 2*y)
+    fe = Expression(f, degree=1)
+
+    assert check(f, fe)
+
+def test_nosympy_const_expr():    
+    mesh = UnitSquareMesh(3, 3)
+    
+    a = Constant(3)
+    x, y = SpatialCoordinate(mesh)
+    f = a*(x + 2*y)
+    a_ = sp.Symbol('a')
+    # The idea here to say to compile f effectively into
+    # a*(x[0] + x[1]), a=parameter (see the name of the symbol)
+    fe = Expression(f, subs={a: a_}, degree=1, a=2)
+    # Then we can to refer to it
+    fe.a = 4
+
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-10
+    
+    a.assign(Constant(4))
+    assert check(f, fe)
+
+    # And as long as the name stays the same we don't trigger recompile

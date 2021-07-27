@@ -1,5 +1,6 @@
 from ufl.algorithms.apply_derivatives import apply_derivatives
 from ufl.conditional import EQ, NE, GT, LT, GE, LE
+from functools import reduce
 import ufl, dolfin, sympy, operator
 from random import sample
 import numpy as np
@@ -7,15 +8,15 @@ import numpy as np
 from .common import *
 
 
-# def random_symbol(used, size=4):
-#     '''Name of size avoiding used'''
-#     alphabet = map(chr, range(65, 91))
-#     alphabet.extend(map(lambda s: s.lower(), alphabet))
+def random_symbol(used, size=4):
+    '''Name of size avoiding used'''
+    alphabet = list(map(chr, range(65, 91)))
+    alphabet.extend(list(map(lambda s: s.lower(), alphabet)))
     
-#     while True:
-#         symbol = sympy.Symbol(''.join(sample(alphabet, size)))
-#         if symbol not in used:
-#             return symbol
+    while True:
+        symbol = sympy.Symbol(''.join(sample(alphabet, size)))
+        if symbol not in used:
+            return symbol
 
         
 def make_rule(rule):
@@ -39,17 +40,16 @@ def terminal_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 
     if isinstance(expr, dolfin.Constant):
         if expr.ufl_shape == ():
-            # # Make constant scalars into symbols which will take the
-            # # value from the dictionary. This way Expression('A', A=2)
-            # # is made so we don't recompile
+            assert expr in subs
+            # Make constant scalars into symbols which will take the
+            # value from the dictionary. This way Expression('A', A=2)
+            # is made so we don't recompile
             # used = reduce(operator.and_,
             #               (v.free_symbols if hasattr(v, 'free_symbols') else set() for v in subs.values()))
             # symbol = random_symbol(used, size=3)
             # # Make nute of the substitution
-            # subs[symbol] = expr(0)
-
-            # return symbol
-            return expr(0)
+            # print(symbol, expr(0))
+            return subs[expr]
         
         return sympy.Matrix(np.array(expr.values()).reshape(expr.ufl_shape))
 
