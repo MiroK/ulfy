@@ -40,19 +40,33 @@ def terminal_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 
     if isinstance(expr, dolfin.Constant):
         if expr.ufl_shape == ():
-            assert expr in subs
-            # Make constant scalars into symbols which will take the
-            # value from the dictionary. This way Expression('A', A=2)
-            # is made so we don't recompile
-            # used = reduce(operator.and_,
-            #               (v.free_symbols if hasattr(v, 'free_symbols') else set() for v in subs.values()))
-            # symbol = random_symbol(used, size=3)
-            # # Make nute of the substitution
-            # print(symbol, expr(0))
-            return subs[expr]
-        
-        return sympy.Matrix(np.array(expr.values()).reshape(expr.ufl_shape))
+            if expr in subs:
+                # Make constant scalars into symbols which will take the
+                # value from the dictionary. This way Expression('A', A=2)
+                # is made so we don't recompile
+                # used = reduce(operator.and_,
+                #               (v.free_symbols if hasattr(v, 'free_symbols') else set() for v in subs.values()))
+                # symbol = random_symbol(used, size=3)
+                # # Make nute of the substitution
+                # print(symbol, expr(0))
+                return subs[expr]
+            else:
+                return expr(0)
+        else:
+            if not expr in subs:
+                return sympy.Matrix(np.array(expr.values()).reshape(expr.ufl_shape))
+            else:
+                base = subs[expr]
+                if len(expr.ufl_shape) == 1:
+                    n, = expr.ufl_shape
+                    syms = [sympy.Symbol(f'{base}_{i}') for i in range(n)]
+                else:
+                    nrows, ncols = expr.ufl_shape
+                    syms = [sympy.Symbol(f'{base}_{i}{j}') for i in range(nrows) for j in range(ncols)]
 
+                return sympy.Matrix(np.array(syms).reshape(expr.ufl_shape))
+            
+            
     if isinstance(expr, ufl.constantvalue.Identity):
         return sympy.eye(expr.ufl_shape[0])
 

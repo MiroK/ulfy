@@ -707,6 +707,7 @@ def test_nosympy_const_expr():
 
     assert check(f, fe)
 
+    
 def test_nosympy_const_expr():    
     mesh = UnitSquareMesh(3, 3)
     
@@ -724,5 +725,51 @@ def test_nosympy_const_expr():
     
     a.assign(Constant(4))
     assert check(f, fe)
-
     # And as long as the name stays the same we don't trigger recompile
+
+
+def test_nosympy_fconst_expr():    
+    mesh = UnitSquareMesh(3, 3)
+    
+    a, b = Constant(3), Constant(4)
+    x, y = SpatialCoordinate(mesh)
+
+    z = sin(a+b)
+    f = z*(x + 2*y)
+    a_, b_ = sp.symbols('a, b')
+    # The idea here to say to compile f effectively into
+    # a*(x[0] + x[1]), a=parameter (see the name of the symbol)
+    fe = Expression(f, subs={a: a_, b: b_}, degree=1, a=1, b=1)
+    # Then we can to refer to it
+    fe.a = 4
+    fe.b = 2
+
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-10
+    
+    a.assign(Constant(4))
+    b.assign(Constant(2))    
+    assert check(f, fe)
+
+
+def test_nosympy_const_tensor_expr():
+    mesh = UnitSquareMesh(3, 3)
+
+    x, y = SpatialCoordinate(mesh)
+    M = as_matrix(((x, y), (2*y, -x)))
+    A = Constant(((1, 2), (3, 4)))
+    A_ = sp.MatrixSymbol('A', *A.ufl_shape)
+
+    f = dot(M, A)
+    # Substituting with tensor symbol A we will have
+    # access to its compontents ...
+    fe = Expression(f, degree=1, subs={A: A_})
+    
+    check = lambda a, b: sqrt(abs(assemble(inner(a-b, a-b)*dx))) < 1E-10
+
+    A.assign(Constant(((2, 3), (4, 5))))
+    assert not check(f, fe)
+    
+    # ... and thus change A
+    fe.A_00, fe.A_01, fe.A_10, fe.A_11 = 2, 3, 4, 5
+
+    assert check(f, fe)
