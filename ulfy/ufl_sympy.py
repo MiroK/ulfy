@@ -1,5 +1,5 @@
 from ufl.algorithms.apply_derivatives import apply_derivatives
-from ufl.conditional import EQ, NE, GT, LT, GE, LE
+from ufl.conditional import EQ, NE, GT, LT, GE, LE, MaxValue, MinValue
 from functools import reduce
 import ufl, dolfin, sympy, operator
 from random import sample
@@ -312,6 +312,9 @@ DEFAULT_RULES.update(
              (ufl.operators.OrCondition, sympy.Or),
              (ufl.operators.NotCondition, sympy.Not),
              (ufl.operators.Conditional, lambda c, t, f: sympy.Piecewise((t, c), (f, True))),
+             #
+             (MaxValue, sympy.Max),
+             (MinValue, sympy.Min),
              # Indexing    
              (ufl.tensors.ListTensor, _list_tensor)
          )

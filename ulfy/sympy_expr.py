@@ -83,6 +83,9 @@ def check_substitutions(subs):
 
 def Expression(body, **kwargs):
     '''Construct dolfin.Expression or Constant from sympy/ufl expressions'''
+    if isinstance(body, df.Constant):
+        return body
+    
     # Generate body and ask again
     if isinstance(body, (sp.Expr, sp.Matrix, sp.ImmutableMatrix)):
         body, kwargs, is_constant_expr = expr_body(body, **kwargs)
