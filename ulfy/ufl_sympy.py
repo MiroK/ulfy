@@ -38,6 +38,12 @@ def terminal_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
     if isinstance(expr, (ufl.algebra.ScalarValue, ufl.algebra.IntValue)):
         return expr.value()
 
+    if isinstance(expr, ufl.constantvalue.Zero):
+        if expr.ufl_shape == ():
+            return 0
+        else:
+            return sp.Matrix(np.zeros(expr.ufl_shape))
+
     if isinstance(expr, dolfin.Constant):
         if expr.ufl_shape == ():
             if expr in subs:
@@ -72,7 +78,7 @@ def terminal_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
 
     if isinstance(expr, ufl.geometry.SpatialCoordinate):
         return sympy.Matrix(coordnames[:expr.ufl_shape[0]]) # A column vector
-    
+
     # Look it up
     return subs[expr]
 
