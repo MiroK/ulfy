@@ -42,7 +42,7 @@ def terminal_rule(expr, subs, rules, coordnames=DEFAULT_NAMES):
         if expr.ufl_shape == ():
             return 0
         else:
-            return sp.Matrix(np.zeros(expr.ufl_shape))
+            return sympy.Matrix(np.zeros(expr.ufl_shape))
 
     if isinstance(expr, dolfin.Constant):
         if expr.ufl_shape == ():
