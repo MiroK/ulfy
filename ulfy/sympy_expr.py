@@ -83,13 +83,16 @@ def check_substitutions(subs):
 
 def Expression(body, **kwargs):
     '''Construct dolfin.Expression or Constant from sympy/ufl expressions'''
-    if isinstance(body, df.Constant):
+    backend = kwargs.get("backend", None)
+    backend = df if backend is None else backend
+
+    if isinstance(body, backend.Constant):
         return body
     
     # Generate body and ask again
     if isinstance(body, (sp.Expr, sp.Matrix, sp.ImmutableMatrix)):
         body, kwargs, is_constant_expr = expr_body(body, **kwargs)
-        return df.Constant(str_to_num(body)) if is_constant_expr else Expression(body, **kwargs)
+        return backend.Constant(str_to_num(body)) if is_constant_expr else Expression(body, **kwargs)
 
     # Translate UFL and ask againx
     if hasattr(body, 'ufl_shape'):
@@ -133,4 +136,5 @@ def Expression(body, **kwargs):
         return Expression(body, **kwargs)
     
     # We have strings, lists and call dolfin
-    return df.Expression(body, **kwargs)
+    kwargs.pop("backend", None)
+    return backend.Expression(body, **kwargs)
